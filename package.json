@@ -1,0 +1,97 @@
+{
+  "name": "ai-interviewer",
+  "main": "expo-router/entry",
+  "version": "1.0.0",
+  "description": "AI Mock Interviewer Desktop App",
+  "author": "Developer <developer@example.com>",
+  "dependencies": {
+    "@expo/ui": "~57.0.24",
+    "@expo/vector-icons": "^15.0.2",
+    "@openrouter/sdk": "^1.4.25",
+    "@react-navigation/bottom-tabs": "^7.21.0",
+    "expo": "~57.0.29",
+    "expo-constants": "~57.0.22",
+    "expo-device": "~57.0.2",
+    "expo-font": "~57.0.4",
+    "expo-glass-effect": "~57.0.4",
+    "expo-image": "~57.0.5",
+    "expo-linking": "~57.0.13",
+    "expo-router": "~57.0.27",
+    "expo-secure-store": "~57.0.4",
+    "expo-splash-screen": "~57.0.10",
+    "expo-status-bar": "~57.0.1",
+    "expo-symbols": "~57.0.3",
+    "expo-system-ui": "~57.0.4",
+    "expo-web-browser": "~57.0.3",
+    "nativewind": "^4.2.7",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-reanimated": "4.5.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-web": "~0.21.0",
+    "react-native-worklets": "0.10.1",
+    "serve-handler": "^6.1.7"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "concurrently": "^10.0.6",
+    "cross-env": "^10.1.0",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~6.0.3",
+    "wait-on": "^9.5.1"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "expo lint",
+    "electron:dev": "concurrently -k \"npx expo start --web -c\" \"wait-on tcp:8081 && cross-env NODE_ENV=development electron ./electron/main.js\"",
+    "build:web": "npx expo export --platform web",
+    "electron:pack": "npm run build:web && electron-builder --dir",
+    "electron:dist": "npm run build:web && electron-builder",
+    "electron:dist:win": "npm run build:web && electron-builder --win",
+    "electron:dist:linux": "npm run build:web && electron-builder --linux",
+    "electron:dist:mac": "npm run build:web && electron-builder --mac"
+  },
+  "build": {
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "appId": "com.aiinterviewer.desktop",
+    "productName": "AI Mock Interviewer",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Education"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.education"
+    }
+  },
+  "private": true
+}
