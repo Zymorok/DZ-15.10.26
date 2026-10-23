@@ -1,7 +1,6 @@
-import { OpenRouter } from "@openrouter/sdk";
 import { OpenRouterAPIMessage } from "@/types";
 import { getApiKey, getSelectedModel } from "./storage";
-import { AVAILABLE_MODELS, DEFAULT_MODEL } from "@/constants/models";
+import { AVAILABLE_MODELS, DEFAULT_MODEL } from "@/constants/coach-models";
 
 export interface SendChatOptions {
   messages: OpenRouterAPIMessage[];
@@ -12,7 +11,7 @@ export interface SendChatOptions {
 export async function sendChatToOpenRouter({
   messages,
   temperature = 0.7,
-  maxTokens = 800,
+  maxTokens = 1800,
 }: SendChatOptions): Promise<string> {
   const apiKey = await getApiKey();
 
@@ -24,22 +23,33 @@ export async function sendChatToOpenRouter({
   const validModelIds = AVAILABLE_MODELS.map((m) => m.id);
   const model = savedModel && validModelIds.includes(savedModel) ? savedModel : DEFAULT_MODEL;
 
-  const openRouter = new OpenRouter({
-    apiKey: apiKey,
-    httpReferer: "https://github.com/react-native-lessons",
-    appTitle: "React Native AI Mock Interviewer",
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
 
   try {
-    const response = await openRouter.chat.send({
-      chatRequest: {
-        model: model,
-        messages: messages,
-        temperature: temperature,
-        maxTokens: maxTokens,
-        stream: false,
+    const request = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "X-OpenRouter-Title": "AI Language Roleplay Coach",
       },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+        response_format: { type: "json_object" },
+        provider: { require_parameters: true },
+      }),
     });
+
+    if (request.status === 401) throw new Error("Невірний API-ключ. Перевірте його у налаштуваннях.");
+    if (request.status === 402) throw new Error("Недостатньо коштів. Оберіть безкоштовну модель у налаштуваннях.");
+    if (request.status === 429) throw new Error("Ліміт запитів вичерпано. Зачекайте або оберіть іншу модель.");
+    if (!request.ok) throw new Error(`OpenRouter тимчасово недоступний (${request.status}). Спробуйте ще раз або змініть модель.`);
+    const response = await request.json();
 
     if (!("choices" in response) || !response.choices || response.choices.length === 0) {
       throw new Error("Модель повернула пусту відповідь.");
@@ -51,7 +61,7 @@ export async function sendChatToOpenRouter({
     if (typeof choice.message?.content === "string") {
       rawContent = choice.message.content;
     } else if (Array.isArray(choice.message?.content)) {
-      rawContent = (choice.message.content as Array<{ text?: string }>)
+      rawContent = (choice.message.content as { text?: string }[])
         .map((item) => item.text || "")
         .join("");
     }
@@ -66,12 +76,13 @@ export async function sendChatToOpenRouter({
     }
 
     return cleanReply;
-  } catch (error: any) {
-    if (error?.status === 401 || error?.statusCode === 401) {
-      throw new Error("Невірний API-ключ OpenRouter. Перевірте ключ у налаштуваннях.");
-    } else if (error?.status === 429 || error?.statusCode === 429) {
-      throw new Error("Перевищено ліміт запитів до безкоштовної моделі. Спробуйте знову через хвилину.");
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("AI не відповів вчасно. Спробуйте ще раз.");
     }
-    throw new Error(error?.message || "Помилка при зверненні до OpenRouter через SDK.");
+    if (error instanceof TypeError) throw new Error("Немає зв’язку з OpenRouter. Перевірте інтернет.");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }

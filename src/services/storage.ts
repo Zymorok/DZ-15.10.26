@@ -1,10 +1,21 @@
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
-const API_KEY_STORAGE = "user_openrouter_key";
-const MODEL_STORAGE = "user_selected_model";
+const API_KEY_STORAGE = "coach15_openrouter_key";
+const MODEL_STORAGE = "coach15_selected_model";
+
+async function readValue(name: string) {
+  if (Platform.OS === "web") return sessionStorage.getItem(name);
+  return SecureStore.getItemAsync(name);
+}
+
+async function writeValue(name: string, value: string) {
+  if (Platform.OS === "web") sessionStorage.setItem(name, value);
+  else await SecureStore.setItemAsync(name, value);
+}
 
 export async function saveApiKey(key: string): Promise<void> {
-  await SecureStore.setItemAsync(API_KEY_STORAGE, key.trim());
+  await writeValue(API_KEY_STORAGE, key.trim());
 }
 
 /**
@@ -15,7 +26,7 @@ export async function saveApiKey(key: string): Promise<void> {
  */
 export async function getApiKey(): Promise<string | null> {
   try {
-    const key = await SecureStore.getItemAsync(API_KEY_STORAGE);
+    const key = await readValue(API_KEY_STORAGE);
     if (key && key.trim().length > 0) {
       return key.trim();
     }
@@ -44,23 +55,24 @@ export function getEnvApiKey(): string | null {
  */
 export async function getCustomApiKey(): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(API_KEY_STORAGE);
+    return await readValue(API_KEY_STORAGE);
   } catch {
     return null;
   }
 }
 
 export async function deleteApiKey(): Promise<void> {
-  await SecureStore.deleteItemAsync(API_KEY_STORAGE);
+  if (Platform.OS === "web") sessionStorage.removeItem(API_KEY_STORAGE);
+  else await SecureStore.deleteItemAsync(API_KEY_STORAGE);
 }
 
 export async function saveSelectedModel(model: string): Promise<void> {
-  await SecureStore.setItemAsync(MODEL_STORAGE, model);
+  await writeValue(MODEL_STORAGE, model);
 }
 
 export async function getSelectedModel(): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(MODEL_STORAGE);
+    return await readValue(MODEL_STORAGE);
   } catch {
     return null;
   }

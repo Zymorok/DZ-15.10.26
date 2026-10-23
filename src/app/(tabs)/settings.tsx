@@ -7,10 +7,10 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  getApiKey,
   getCustomApiKey,
   getEnvApiKey,
   saveApiKey,
@@ -18,7 +18,7 @@ import {
   getSelectedModel,
   saveSelectedModel,
 } from "@/services/storage";
-import { AVAILABLE_MODELS, DEFAULT_MODEL } from "@/constants/models";
+import { AVAILABLE_MODELS, DEFAULT_MODEL } from "@/constants/coach-models";
 import { AIModelTier } from "@/types";
 
 export default function SettingsScreen() {
@@ -26,15 +26,12 @@ export default function SettingsScreen() {
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [isSavedInSecureStore, setIsSavedInSecureStore] = useState(false);
   const [hasEnvKey, setHasEnvKey] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTier, setActiveTier] = useState<"all" | AIModelTier>("all");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    setLoading(true);
+    async function loadSettings() {
     try {
       const customKey = await getCustomApiKey();
       const envKey = getEnvApiKey();
@@ -59,31 +56,37 @@ export default function SettingsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+    }
+    void loadSettings();
+  }, []);
 
   const handleSave = async () => {
-    if (!apiKeyInput.trim().startsWith("sk-or-v1-")) {
-      Alert.alert(
-        "Некоректний формат",
-        "API-ключ OpenRouter починається з 'sk-or-v1-'. Будь ласка, перевірте скопійоване значення."
-      );
+    if (apiKeyInput.trim() && !/^sk-or-v1-[A-Za-z0-9_-]{20,}$/.test(apiKeyInput.trim())) {
+      setNotice("Перевірте ключ OpenRouter: він починається з sk-or-v1-.");
       return;
     }
 
     setLoading(true);
     try {
-      await saveApiKey(apiKeyInput.trim());
+      if (apiKeyInput.trim()) await saveApiKey(apiKeyInput.trim());
       await saveSelectedModel(selectedModel);
-      setIsSavedInSecureStore(true);
-      Alert.alert("Успіх", "Налаштування успішно збережено в SecureStore!");
-    } catch (err: any) {
-      Alert.alert("Помилка", err.message);
+      setIsSavedInSecureStore(!!await getCustomApiKey());
+      setNotice("Налаштування збережено.");
+    } catch {
+      setNotice("Не вдалося зберегти налаштування.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
+    if (Platform.OS === "web") {
+      await deleteApiKey();
+      setApiKeyInput("");
+      setIsSavedInSecureStore(false);
+      setNotice("Ключ видалено.");
+      return;
+    }
     Alert.alert(
       "Підтвердження",
       "Ви впевнені, що хочете видалити збережений у SecureStore API-ключ?" +
@@ -130,13 +133,13 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background-dark">
+    <SafeAreaView className="flex-1 bg-background-dark" edges={["top", "left", "right"]}>
       <ScrollView
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="w-full rounded-3xl bg-background-card p-6 border border-slate-800 shadow-2xl">
-          <Text className="text-2xl font-bold text-white mb-1">⚙️ Налаштування AI</Text>
+            <Text className="text-2xl font-bold text-white mb-1">Налаштування AI</Text>
           <Text className="text-xs text-slate-400 mb-6">
             Керуйте API-ключем OpenRouter та обирайте моделі різної потужності й цінової категорії.
           </Text>
@@ -158,15 +161,14 @@ export default function SettingsScreen() {
               />
               <Text className="text-sm font-medium text-white">
                 {isSavedInSecureStore
-                  ? "Збережено в SecureStore (пріоритет)"
+                  ? "Ключ збережено"
                   : hasEnvKey
                   ? "Підключено з файлу .env (fallback)"
                   : "Ключ не встановлено"}
               </Text>
             </View>
             <Text className="text-[11px] text-slate-500 mt-2 leading-4">
-              Ключ із SecureStore шифрується апаратно на пристрої (iOS Keychain / Android KeyStore)
-              та має вищий пріоритет над .env.
+              {Platform.OS === "web" ? "У браузері ключ зберігається лише до закриття вкладки." : "На телефоні ключ зберігається у захищеному сховищі пристрою."}
             </Text>
           </View>
 
@@ -187,6 +189,7 @@ export default function SettingsScreen() {
                 placeholder="sk-or-v1-xxxxxxxx..."
                 placeholderTextColor="#64748B"
                 secureTextEntry
+                accessibilityLabel="Ключ OpenRouter"
                 autoCapitalize="none"
                 autoCorrect={false}
                 className="w-full rounded-xl bg-slate-900 px-4 py-3 text-white border border-slate-700 mb-4 text-xs font-mono"
@@ -206,11 +209,9 @@ export default function SettingsScreen() {
                 className="flex-row gap-2 mb-3"
               >
                 {[
-                  { id: "all", label: `Всі (${AVAILABLE_MODELS.length})` },
-                  { id: "free", label: "🆓 Free (4)" },
-                  { id: "budget", label: "💡 Budget (4)" },
-                  { id: "mid", label: "⚡ Mid-Tier (5)" },
-                  { id: "flagship", label: "👑 Flagship (4)" },
+                  { id: "all", label: `Усі (${AVAILABLE_MODELS.length})` },
+                  { id: "free", label: "Безкоштовні" },
+                  { id: "budget", label: "Платні" },
                 ].map((chip) => {
                   const isSelected = activeTier === chip.id;
                   return (
@@ -243,6 +244,9 @@ export default function SettingsScreen() {
                   return (
                     <TouchableOpacity
                       key={m.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={m.name}
+                      accessibilityState={{ selected: active }}
                       onPress={() => setSelectedModel(m.id)}
                       activeOpacity={0.8}
                       className={`rounded-xl p-3 border ${
@@ -272,13 +276,15 @@ export default function SettingsScreen() {
               </View>
 
               {/* Кнопки збереження/видалення */}
+              {notice ? <Text accessibilityRole="alert" className="text-sm text-blue-200 mb-4">{notice}</Text> : null}
               <TouchableOpacity
                 onPress={handleSave}
+                accessibilityRole="button"
                 activeOpacity={0.8}
                 className="rounded-xl bg-primary py-3.5 items-center active:bg-primary-dark mb-3"
               >
                 <Text className="font-bold text-white text-sm">
-                  {isSavedInSecureStore ? "Оновити в SecureStore" : "Зберегти в SecureStore"}
+                  Зберегти налаштування
                 </Text>
               </TouchableOpacity>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -34,12 +34,7 @@ export default function InterviewScreen() {
 
   const flatListRef = useRef<FlatList>(null);
 
-  // Старт співбесіди при завантаженні екрану
-  useEffect(() => {
-    initInterview();
-  }, []);
-
-  const initInterview = async () => {
+  const initInterview = useCallback(async () => {
     setLoading(true);
 
     const systemPrompt = buildInterviewSystemPrompt(
@@ -69,7 +64,13 @@ export default function InterviewScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentTopic, currentLevel, router]);
+
+  // Старт співбесіди при завантаженні екрану
+  useEffect(() => {
+    const timer = setTimeout(() => { void initInterview(); }, 0);
+    return () => clearTimeout(timer);
+  }, [initInterview]);
 
   const handleSendAnswer = async () => {
     if (!inputAnswer.trim() || loading) return;

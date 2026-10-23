@@ -4,10 +4,12 @@ import React from "react";
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import Head from "expo-router/head";
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
+      <Head><title>Language Coach</title></Head>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -19,7 +21,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* Повноекранний екран співбесіди (поверх табів) */}
         <Stack.Screen
-          name="interview"
+          name="roleplay"
           options={{
             headerShown: false,
             gestureEnabled: false,

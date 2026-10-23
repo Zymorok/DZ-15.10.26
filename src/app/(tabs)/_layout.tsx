@@ -1,9 +1,10 @@
 import React from "react";
-import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -11,8 +12,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: "#1E293B",
           borderTopColor: "#334155",
-          height: 76,
-          paddingBottom: 10,
+          height: 60 + Math.max(insets.bottom, 10),
+          paddingBottom: Math.max(insets.bottom, 10),
           paddingTop: 8,
         },
         tabBarActiveTintColor: "#60A5FA",
@@ -27,10 +28,17 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Співбесіда",
+          title: "Сценарії",
           tabBarIcon: ({ color }) => (
             <Ionicons name="chatbubbles" size={22} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="vocabulary"
+        options={{
+          title: "Словничок",
+          tabBarIcon: ({ color }) => <Ionicons name="book" size={22} color={color} />,
         }}
       />
       {/* Вкладка 2: Налаштування */}
