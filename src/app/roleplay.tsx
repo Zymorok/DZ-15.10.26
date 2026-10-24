@@ -142,7 +142,7 @@ export default function RoleplayScreen() {
         ) : null}
       </View>
 
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "android" ? "height" : "padding"}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <FlatList
           ref={list}
           data={messages}

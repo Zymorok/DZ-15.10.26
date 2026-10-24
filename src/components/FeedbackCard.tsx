@@ -28,7 +28,7 @@ export function FeedbackCard({ feedback }: { feedback: Feedback }) {
           <Text className="text-xs text-slate-300">Природніше англійською</Text>
           <Text className="text-sm text-white font-semibold mt-1">{feedback.betterPhrasing}</Text>
           <Text className="text-xs text-slate-300 mt-1">{feedback.translation}</Text>
-          <TouchableOpacity onPress={handleSave} disabled={saved} accessibilityRole="button" className="py-2 self-start">
+          <TouchableOpacity onPress={handleSave} disabled={saved} accessibilityRole="button" className="py-2">
             <Text className="text-xs font-bold text-blue-300">{saved ? "✓ У словничку" : "+ Зберегти фразу"}</Text>
           </TouchableOpacity>
         </View>
