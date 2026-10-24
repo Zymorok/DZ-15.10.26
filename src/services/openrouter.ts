@@ -80,7 +80,9 @@ export async function sendChatToOpenRouter({
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error("AI не відповів вчасно. Спробуйте ще раз.");
     }
-    if (error instanceof TypeError) throw new Error("Немає зв’язку з OpenRouter. Перевірте інтернет.");
+    if (error instanceof TypeError || (error instanceof Error && /fetch failed|network request failed|failed to fetch/i.test(error.message))) {
+      throw new Error("Немає зв’язку з OpenRouter. Перевірте інтернет.");
+    }
     throw error;
   } finally {
     clearTimeout(timeout);
