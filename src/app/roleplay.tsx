@@ -44,7 +44,7 @@ export default function RoleplayScreen() {
       ...history.map((item) => ({ role: item.role, content: item.content })),
     ];
     if (action === "finish") conversation.push({ role: "system", content: SUMMARY_PROMPT });
-    if (action === "send") conversation.push({ role: "system", content: "The latest user message is a real learner answer. Analyze it now. betterPhrasing and its Ukrainian translation must not be empty. Continue this conversation instead of greeting again." });
+    if (action === "send") conversation.push({ role: "system", content: "Analyze the latest learner answer and return ONLY the JSON object from the required format. reply must contain ONLY your short in-character English response, never corrections, translations or field labels. Put all grammar feedback ONLY in correction, betterPhrasing and translation. betterPhrasing and its Ukrainian translation must not be empty. Continue this conversation instead of greeting again." });
 
     try {
       const response = await sendChatToOpenRouter({ messages: conversation, temperature: 0.4 });
@@ -142,7 +142,7 @@ export default function RoleplayScreen() {
         ) : null}
       </View>
 
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "android" ? "height" : "padding"}>
         <FlatList
           ref={list}
           data={messages}

@@ -18,6 +18,8 @@ export function parseReply(text: string, needsFeedback = false): RoleplayReply {
   const data = parseObject(text);
   if (
     typeof data?.reply !== "string" || !data.reply.trim() ||
+    /[А-Яа-яІіЇїЄєҐґ]/.test(data.reply) ||
+    /\b(correction|better[ _]?phrasing|hasCorrection|translation)\s*:/i.test(data.reply) ||
     typeof data.hasCorrection !== "boolean" ||
     typeof data.correction !== "string" ||
     typeof data.betterPhrasing !== "string" ||
